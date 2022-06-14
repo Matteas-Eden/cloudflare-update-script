@@ -1,0 +1,3 @@
+*.log
+.env
+cloudflare-update-script.service
