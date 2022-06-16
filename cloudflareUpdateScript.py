@@ -21,7 +21,7 @@ CRITICAL_MSG = "Critical error encountered. Terminating script..."
 
 
 def getDNSRecord(cf, zone_name, url):
-    log(f'Fetching zone ID from CloudFlare for {zone_name}...')
+    log(f"Fetching zone ID from CloudFlare for '{zone_name}'...")
     try:
         zones = cf.zones.get(params={"name": zone_name})
         zone_id = zones[0]["id"]
@@ -30,7 +30,7 @@ def getDNSRecord(cf, zone_name, url):
     except Exception as e:
         handleUnknownError(e)
 
-    log(f'Fetching DNS records from CloudFlare for {url}...')
+    log(f"Fetching DNS records from CloudFlare for '{url}'...")
     try:
         dns_params = {"name": url, "match": "all"}
         dns_records = cf.zones.dns_records.get(zone_id, params=dns_params)
