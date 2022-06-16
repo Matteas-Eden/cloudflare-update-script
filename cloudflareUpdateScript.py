@@ -62,19 +62,20 @@ def getCurrentPublicIP():
     return public_ip
 
 
-def updateIPOnDNS(cf, zone_id, dns_record, new_ip):
+def updateIPOnDNS(cf, zone_id, dns_record, new_ip, dry_run=False):
 
     log("Updating DNS record...")
     dns_record_id = dns_record['id']
     dns_record['content'] = new_ip
-    try:
-        dns_record = cf.zones.dns_records.put(zone_id,
-                                              dns_record_id,
-                                              data=dns_record)
-    except CloudFlare.exceptions.CloudFlareAPIError:
-        log('Could not update DNS record on CloudFlare', 1)
-        log(CRITICAL_MSG, 1)
-        exit(1)
+    if not dry_run:
+        try:
+            dns_record = cf.zones.dns_records.put(zone_id,
+                                                dns_record_id,
+                                                data=dns_record)
+        except CloudFlare.exceptions.CloudFlareAPIError:
+            log('Could not update DNS record on CloudFlare', 1)
+            log(CRITICAL_MSG, 1)
+            exit(1)
 
     log("Updated DNS record w/ IP: " + new_ip)
 
@@ -131,9 +132,12 @@ def main():
 
     LOGGING = True
     LOGGING_FILE = ''
+    DRY_RUN = False
 
     if ("-s" or "--silent") in sys.argv:
         LOGGING = False
+    if ("-d" or "--dry") in sys.argv:
+        DRY_RUN = True
 
     env = {
         "API_TOKEN": '',
@@ -159,7 +163,10 @@ def main():
     if LOGGING_FILE:
         log(f"Logs will be saved in {os.path.join(os.getcwd(), LOGGING_FILE)}")
 
-    log(f"Updating record '{env['RECORD_NAME']}' in zone '{env['ZONE_NAME']}...'"
+    if DRY_RUN:
+        log("'DRY RUN' mode in effect; no changes will be written to DNS")
+
+    log(f"Updating record '{env['RECORD_NAME']}' in zone '{env['ZONE_NAME']}'..."
         )
     cf = CloudFlare.CloudFlare(token=env["API_TOKEN"])
 
@@ -171,7 +178,7 @@ def main():
     log(f"Current IP on DNS: {dns_record_ip}")
 
     if dns_record_ip != public_ip:
-        updateIPOnDNS(cf, zone_id, dns_record, public_ip)
+        updateIPOnDNS(cf, zone_id, dns_record, public_ip, DRY_RUN)
     else:
         log(f"No change in IP ({dns_record_ip} == {public_ip})")
 
