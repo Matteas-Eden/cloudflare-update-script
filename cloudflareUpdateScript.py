@@ -22,12 +22,22 @@ CRITICAL_MSG = "Critical error encountered. Terminating script..."
 
 def getDNSRecord(cf, zone_name, url):
     log(f'Fetching zone ID from CloudFlare for {zone_name}...')
-    zones = cf.zones.get(params={"name": zone_name})
-    zone_id = zones[0]["id"]
+    try:
+        zones = cf.zones.get(params={"name": zone_name})
+        zone_id = zones[0]["id"]
+    except CloudFlare.exceptions.CloudFlareAPIError as e:
+        handleCloudFlareAPIError(e)
+    except Exception as e:
+        handleUnknownError(e)
 
     log(f'Fetching DNS records from CloudFlare for {url}...')
-    dns_params = {"name": url, "match": "all"}
-    dns_records = cf.zones.dns_records.get(zone_id, params=dns_params)
+    try:
+        dns_params = {"name": url, "match": "all"}
+        dns_records = cf.zones.dns_records.get(zone_id, params=dns_params)
+    except CloudFlare.exceptions.CloudFlareAPIError as e:
+        handleCloudFlareAPIError(e)
+    except Exception as e:
+        handleUnknownError(e)
 
     if len(dns_records) != 1:
         log("Unexpected number of DNS records returned: " + len(dns_records),
@@ -67,6 +77,18 @@ def updateIPOnDNS(cf, zone_id, dns_record, new_ip):
         exit(1)
 
     log("Updated DNS record w/ IP: " + new_ip)
+
+
+def handleCloudFlareAPIError(e):
+    log(f"CloudFlare API error encountered: {str(e)}", 1)
+    log(CRITICAL_MSG, 1)
+    exit(1)
+
+
+def handleUnknownError(e):
+    log(f"Unknown error encountered: {str(e)}", 1)
+    log(CRITICAL_MSG, 1)
+    exit(1)
 
 
 def log(msg, severity=0):
@@ -114,10 +136,10 @@ def main():
         LOGGING = False
 
     env = {
-        "API_TOKEN" : '',
-        "RECORD_NAME" : '',
-        "ZONE_NAME" : '',
-        "LOGGING_FILE" : '',
+        "API_TOKEN": '',
+        "RECORD_NAME": '',
+        "ZONE_NAME": '',
+        "LOGGING_FILE": '',
     }
 
     load_dotenv()
@@ -137,10 +159,12 @@ def main():
     if LOGGING_FILE:
         log(f"Logs will be saved in {os.path.join(os.getcwd(), LOGGING_FILE)}")
 
-    log(f"Updating record '{env['RECORD_NAME']}' in zone '{env['ZONE_NAME']}...'")
+    log(f"Updating record '{env['RECORD_NAME']}' in zone '{env['ZONE_NAME']}...'"
+        )
     cf = CloudFlare.CloudFlare(token=env["API_TOKEN"])
 
-    dns_record, zone_id = getDNSRecord(cf, env["ZONE_NAME"], env["RECORD_NAME"])
+    dns_record, zone_id = getDNSRecord(cf, env["ZONE_NAME"],
+                                       env["RECORD_NAME"])
     dns_record_ip = dns_record['content']
     public_ip = getCurrentPublicIP()
 
