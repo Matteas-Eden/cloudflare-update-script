@@ -94,6 +94,13 @@ def log(msg, severity=0):
                     f.write(logged + "\n")
 
 
+def validateEnvVar(env, var):
+    if env[var] == '':
+        log(f"{var} is not specified in environment configuration", 1)
+        log(CRITICAL_MSG, 1)
+        exit(1)
+
+
 def main():
 
     # Expose some globals to make calls to log() easier
@@ -101,15 +108,26 @@ def main():
     global LOGGING
 
     LOGGING = True
+    LOGGING_FILE = ''
 
     if ("-s" or "--silent") in sys.argv:
         LOGGING = False
 
+    env = {
+        "API_TOKEN" : '',
+        "RECORD_NAME" : '',
+        "ZONE_NAME" : '',
+        "LOGGING_FILE" : '',
+    }
+
     load_dotenv()
-    API_TOKEN = os.getenv("API_TOKEN")
-    RECORD_NAME = os.getenv("RECORD_NAME")
-    ZONE_NAME = os.getenv("ZONE_NAME")
-    LOGGING_FILE = os.getenv("LOGGING_FILE")
+
+    for var in env.keys():
+        env[var] = os.getenv(var)
+        if not var == "LOGGING_FILE":
+            validateEnvVar(env, var)
+
+    LOGGING_FILE = env["LOGGING_FILE"]
 
     if LOGGING_FILE and not (".log" in LOGGING_FILE):
         LOGGING_FILE += ".log"
@@ -119,10 +137,10 @@ def main():
     if LOGGING_FILE:
         log(f"Logs will be saved in {os.path.join(os.getcwd(), LOGGING_FILE)}")
 
-    log(f"Updating record '{RECORD_NAME}' in zone '{ZONE_NAME}...'")
-    cf = CloudFlare.CloudFlare(token=API_TOKEN)
+    log(f"Updating record '{env['RECORD_NAME']}' in zone '{env['ZONE_NAME']}...'")
+    cf = CloudFlare.CloudFlare(token=env["API_TOKEN"])
 
-    dns_record, zone_id = getDNSRecord(cf, ZONE_NAME, RECORD_NAME)
+    dns_record, zone_id = getDNSRecord(cf, env["ZONE_NAME"], env["RECORD_NAME"])
     dns_record_ip = dns_record['content']
     public_ip = getCurrentPublicIP()
 
