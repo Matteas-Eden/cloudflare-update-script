@@ -9,10 +9,12 @@ In order to configure the script, you may copy the `.env.template` file into
 
 | Name              | Description                                                    |
 | ----              | -----------                                                    |
-| API_TOKEN         | The API token created in CloudFlare.                           |
-| RECORD_NAME       | The name of the A record to be updated on CloudFlare.          |
-| ZONE_NAME         | The zone (domain) whose DNS table is being updated.            |
+| API_TOKEN*        | The API token created in CloudFlare.                           |
+| RECORD_NAME*      | The name of the A record to be updated on CloudFlare.          |
+| ZONE_NAME*        | The zone (domain) whose DNS table is being updated.            |
 | LOGGING_FILE      | The name of the file to log to.                                |
+
+Variables marked with a `*` are **required**.
 
 ## Usage
 Using the script is simple. You may run the script manually, or you can
@@ -26,6 +28,11 @@ dependencies. Simply run:
 ```
 pip install -r requirements.txt
 ```
+Once that is done, create a copy of the `.env.template` file;
+```
+cp .env.template .env
+```
+and then fill it out with your details as appropriate, adhering to the configurations outlined previously.
 
 ### Manual
 To run the script manually, simply execute via the command line:
@@ -52,10 +59,14 @@ User=<user>
 [Install]
 WantedBy=multi-user.target
 ```
-You're going to want to fill out `/path/to/script.py` with the *absolute* path
+Similarly to setting up the environment variables, you'll want to copy this as such:
+```
+cp cloudflare-update-script.service.template cloudflare-update-script.service
+```
+Then, fill out `/path/to/script.py` with the *absolute* path
 on your machine to where the `cloudflareUpdateScript.py` script is located. You
 also need to replace `<user>` with the name of the user account who will be
-executing the service. Then, simply enable it like you would any other systemd
+executing the service. You'll then need to either copy the service file or symlink it into an appropriate directory (e.g. `/lib/systemd/system/`). Finally, enable it like you would any other systemd
 service:
 
 `systemctl enable cloudflare-update-script`

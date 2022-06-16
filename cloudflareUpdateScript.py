@@ -70,8 +70,8 @@ def updateIPOnDNS(cf, zone_id, dns_record, new_ip, dry_run=False):
     if not dry_run:
         try:
             dns_record = cf.zones.dns_records.put(zone_id,
-                                                dns_record_id,
-                                                data=dns_record)
+                                                  dns_record_id,
+                                                  data=dns_record)
         except CloudFlare.exceptions.CloudFlareAPIError:
             log('Could not update DNS record on CloudFlare', 1)
             log(CRITICAL_MSG, 1)
